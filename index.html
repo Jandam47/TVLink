@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#06080f">
+<title>TV//LINK</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080f; --panel:#0c1120; --panel2:#111a2e; --line:#1d2a45;
+  --cyan:#00f0ff; --amber:#ffb000; --mag:#ff2bd6; --red:#ff3355; --green:#2bff88;
+  --txt:#cfe8ff; --dim:#5d7397;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:Rajdhani,system-ui,sans-serif;overscroll-behavior:none}
+body{
+  background:
+    radial-gradient(ellipse at 50% -10%, #0e2a44 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,240,255,.025) 3px 4px),
+    var(--bg);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.wrap{max-width:430px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 24px)}
+
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.logo{font-family:Orbitron;font-weight:900;font-size:20px;letter-spacing:2px;color:var(--cyan);text-shadow:0 0 10px rgba(0,240,255,.6)}
+.logo b{color:var(--mag);text-shadow:0 0 10px rgba(255,43,214,.6)}
+.status{flex:1;display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono';font-size:12px;color:var(--dim);min-width:0}
+.status span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.led{width:10px;height:10px;border-radius:50%;background:#333;flex:none;box-shadow:0 0 0 1px #000}
+.led.on{background:var(--green);box-shadow:0 0 10px var(--green)}
+.led.wait{background:var(--amber);box-shadow:0 0 10px var(--amber);animation:blink 1s infinite}
+.led.err{background:var(--red);box-shadow:0 0 10px var(--red)}
+@keyframes blink{50%{opacity:.3}}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--cyan);font-size:20px;display:grid;place-items:center}
+
+/* ---------- buttons ---------- */
+.btn{
+  position:relative;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  color:var(--txt);font-family:Orbitron;font-weight:700;font-size:12px;letter-spacing:1px;
+  height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 4px 10px rgba(0,0,0,.4);
+  transition:transform .06s, box-shadow .1s, border-color .1s;
+}
+.btn .ic{font-size:20px;line-height:1;font-family:system-ui,sans-serif;font-variant-emoji:text}
+.btn small{font-family:Rajdhani;font-weight:600;font-size:11px;color:var(--dim);letter-spacing:1px}
+.btn.pressed,.btn:active{transform:scale(.95);border-color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.45),inset 0 0 12px rgba(0,240,255,.15)}
+.btn.power{color:var(--mag);border-color:rgba(255,43,214,.5)}
+.btn.power .ic{text-shadow:0 0 10px var(--mag)}
+.btn.amber{color:var(--amber)}
+.row{display:grid;gap:10px;margin-bottom:12px}
+.r3{grid-template-columns:repeat(3,1fr)}
+.r4{grid-template-columns:repeat(4,1fr)}
+.r5{grid-template-columns:repeat(5,1fr)}
+
+/* ---------- d-pad ---------- */
+.dpad{position:relative;width:min(300px,78vw);aspect-ratio:1;margin:8px auto 18px;border-radius:50%;
+  background:radial-gradient(circle,var(--panel2) 0 60%,var(--panel) 100%);
+  border:1px solid var(--line);box-shadow:0 0 0 6px rgba(0,240,255,.04),0 0 30px rgba(0,240,255,.12),inset 0 0 30px rgba(0,0,0,.6);
+  touch-action:none;
+}
+.dpad::before{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid transparent;
+  background:conic-gradient(from 0deg,var(--cyan),transparent 25%,var(--mag) 50%,transparent 75%,var(--cyan)) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.5;pointer-events:none}
+.dir{position:absolute;display:grid;place-items:center;color:var(--cyan);font-size:26px;border-radius:50%;width:34%;height:34%}
+.dir.up{top:2%;left:33%} .dir.down{bottom:2%;left:33%} .dir.left{left:2%;top:33%} .dir.right{right:2%;top:33%}
+.dir.pressed{background:radial-gradient(circle,rgba(0,240,255,.25),transparent 70%);text-shadow:0 0 12px var(--cyan)}
+.ok{position:absolute;left:31%;top:31%;width:38%;height:38%;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#18284a,#0a1122);border:2px solid var(--cyan);
+  color:var(--cyan);font-family:Orbitron;font-weight:900;font-size:18px;letter-spacing:2px;display:grid;place-items:center;
+  box-shadow:0 0 18px rgba(0,240,255,.35),inset 0 0 14px rgba(0,240,255,.2)}
+.ok.pressed{transform:scale(.94);box-shadow:0 0 30px rgba(0,240,255,.8),inset 0 0 20px rgba(0,240,255,.5)}
+
+/* ---------- rockers ---------- */
+.rockers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;align-items:stretch}
+.rocker{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:30px;overflow:hidden;background:linear-gradient(180deg,var(--panel2),var(--panel))}
+.rocker .btn{border:0;border-radius:0;box-shadow:none;background:transparent;height:58px;font-size:22px}
+.rocker .lbl{text-align:center;font-family:Orbitron;font-size:10px;letter-spacing:2px;color:var(--dim);padding:2px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.mid{display:flex;flex-direction:column;gap:10px}
+.mid .btn{flex:1}
+
+/* ---------- color keys ---------- */
+.ck{height:30px;border-radius:10px}
+.ck.r{background:#c0152f;border-color:#ff3355} .ck.g{background:#0e9a4c;border-color:#2bff88}
+.ck.y{background:#c99200;border-color:#ffcc33} .ck.b{background:#1150c8;border-color:#3b8bff}
+
+/* ---------- sections ---------- */
+details{border:1px solid var(--line);border-radius:14px;background:rgba(12,17,32,.6);margin-bottom:12px}
+summary{list-style:none;padding:12px 14px;font-family:Orbitron;font-size:12px;letter-spacing:2px;color:var(--amber);display:flex;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"▸";transition:transform .2s}
+details[open] summary::after{transform:rotate(90deg)}
+details .inner{padding:0 12px 12px}
+.app{height:58px;font-family:Rajdhani;font-weight:700;font-size:14px;letter-spacing:.5px}
+.app .dot{width:8px;height:8px;border-radius:50%;margin-bottom:3px}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(2,4,10,.85);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.modal.open{display:flex}
+.sheet{width:100%;max-width:430px;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px);max-height:90vh;overflow:auto}
+.sheet h2{font-family:Orbitron;font-size:14px;letter-spacing:3px;color:var(--cyan);margin-bottom:14px}
+label{display:block;font-family:'Share Tech Mono';font-size:12px;color:var(--dim);margin:12px 0 6px}
+input[type=text],select{width:100%;height:46px;border-radius:10px;border:1px solid var(--line);background:#070b16;color:var(--txt);font-family:'Share Tech Mono';font-size:16px;padding:0 12px;user-select:text;-webkit-user-select:text}
+input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px rgba(0,240,255,.3)}
+.sheet .btn{height:46px;font-size:11px}
+.hint{font-size:13px;line-height:1.4;color:var(--dim);margin-top:10px}
+.hint b{color:var(--txt)}
+.hint code{font-family:'Share Tech Mono';color:var(--amber)}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:12px}
+.seg button{height:38px;border:0;background:#070b16;color:var(--dim);font-family:Orbitron;font-size:10px;letter-spacing:1px}
+.seg button.on{background:rgba(0,240,255,.12);color:var(--cyan);box-shadow:inset 0 -2px 0 var(--cyan)}
+.kbdin{height:56px!important;font-size:20px!important;border-color:rgba(0,240,255,.4)!important}
+.toggle{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:15px}
+.toggle input{width:22px;height:22px;accent-color:var(--cyan)}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(120px);
+  background:var(--panel2);border:1px solid var(--cyan);color:var(--txt);padding:10px 16px;border-radius:12px;font-size:14px;
+  max-width:90vw;box-shadow:0 0 20px rgba(0,240,255,.3);transition:transform .25s,opacity .25s;z-index:20;text-align:center;opacity:0;visibility:hidden}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+/* ---------- touchpad ---------- */
+.padview{position:fixed;inset:0;z-index:9;background:var(--bg);display:none;flex-direction:column;gap:10px;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 14px)}
+.padview.open{display:flex}
+.padtop{display:grid;grid-template-columns:54px 1fr 54px;gap:10px;align-items:center}
+.padtop .btn{height:46px}
+.padtitle{text-align:center;font-family:Orbitron;font-weight:900;letter-spacing:3px;color:var(--cyan);font-size:15px;text-shadow:0 0 10px rgba(0,240,255,.5)}
+.padtitle small{display:block;font-family:'Share Tech Mono';font-weight:400;letter-spacing:0;font-size:11px;color:var(--dim);text-shadow:none;margin-top:3px}
+.pad{position:relative;flex:1;border-radius:22px;border:1px solid rgba(0,240,255,.35);overflow:hidden;touch-action:none;
+  background:radial-gradient(ellipse at 50% 40%,#0f1c36,#070b16 75%);
+  box-shadow:0 0 24px rgba(0,240,255,.12),inset 0 0 40px rgba(0,0,0,.7)}
+.pad.active{border-color:var(--cyan);box-shadow:0 0 30px rgba(0,240,255,.3),inset 0 0 40px rgba(0,0,0,.7)}
+.padgrid{position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:linear-gradient(rgba(0,240,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,.12) 1px,transparent 1px);
+  background-size:32px 32px}
+.padhelp{position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:13px;line-height:1.6;color:var(--dim);pointer-events:none;transition:opacity .3s}
+.padhelp b{color:var(--amber);font-weight:600}
+.pad.used .padhelp{opacity:0}
+.ripple{position:absolute;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:2px solid var(--cyan);opacity:0;pointer-events:none}
+.ripple.go{animation:rip .35s ease-out}
+@keyframes rip{from{transform:scale(.3);opacity:1}to{transform:scale(1.4);opacity:0}}
+.padbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.padbar .btn{height:52px}
+.sens{display:flex;align-items:center;gap:10px;font-family:'Share Tech Mono';font-size:11px;color:var(--dim)}
+.sens input{flex:1;accent-color:var(--cyan)}
+.sens #sensVal{width:30px;text-align:right;color:var(--cyan)}
+
+.banner{display:none;border:1px solid var(--amber);background:rgba(255,176,0,.08);border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:14px;line-height:1.35}
+.banner.show{display:block}
+.banner .btn{height:40px;margin-top:8px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">TV<b>//</b>LINK</div>
+    <div class="status"><div class="led" id="led"></div><span id="stxt">offline</span></div>
+    <button class="icon-btn" id="openSettings" aria-label="Nastavení">⚙</button>
+  </header>
+
+  <div class="banner" id="certBanner">
+    TV nepřijímá spojení. Nejspíš je potřeba povolit certifikát televize (stačí jednou za čas).
+    <div class="row r3" style="margin:0">
+      <button class="btn amber" id="bannerCert" style="grid-column:span 2">Povolit certifikát</button>
+      <button class="btn" id="bannerRetry">Znovu</button>
+    </div>
+  </div>
+
+  <div class="row r3">
+    <button class="btn power" data-key="KEY_POWER"><span class="ic">⏻</span><small>POWER</small></button>
+    <button class="btn" data-key="KEY_SOURCE"><span class="ic">⇄</span><small>ZDROJ</small></button>
+    <button class="btn" data-key="KEY_MENU"><span class="ic">☰</span><small>MENU</small></button>
+  </div>
+
+  <div class="dpad">
+    <div class="dir up" data-key="KEY_UP" data-repeat>▲</div>
+    <div class="dir left" data-key="KEY_LEFT" data-repeat>◀</div>
+    <div class="dir right" data-key="KEY_RIGHT" data-repeat>▶</div>
+    <div class="dir down" data-key="KEY_DOWN" data-repeat>▼</div>
+    <div class="ok" data-key="KEY_ENTER">OK</div>
+  </div>
+
+  <div class="row r4">
+    <button class="btn" data-key="KEY_RETURN"><span class="ic">↩</span><small>ZPĚT</small></button>
+    <button class="btn" data-key="KEY_HOME"><span class="ic">⌂</span><small>HOME</small></button>
+    <button class="btn" id="openKbd"><span class="ic">⌨</span><small>PSÁT</small></button>
+    <button class="btn amber" id="openPad"><span class="ic">▣</span><small>PAD</small></button>
+  </div>
+
+  <div class="rockers">
+    <div class="rocker">
+      <button class="btn" data-key="KEY_VOLUP" data-repeat>＋</button>
+      <div class="lbl">VOL</div>
+      <button class="btn" data-key="KEY_VOLDOWN" data-repeat>－</button>
+    </div>
+    <div class="mid">
+      <button class="btn" data-key="KEY_MUTE"><span class="ic">🔇︎</span><small>MUTE</small></button>
+      <button class="btn" data-key="KEY_INFO"><span class="ic">ⓘ</span><small>INFO</small></button>
+    </div>
+    <div class="rocker">
+      <button class="btn" data-key="KEY_CHUP" data-repeat>⌃</button>
+      <div class="lbl">CH</div>
+      <button class="btn" data-key="KEY_CHDOWN" data-repeat>⌄</button>
+    </div>
+  </div>
+
+  <div class="row r5">
+    <button class="btn" data-key="KEY_REWIND" data-repeat><span class="ic">⏪︎</span></button>
+    <button class="btn" data-key="KEY_PLAY"><span class="ic">▶︎</span></button>
+    <button class="btn" data-key="KEY_PAUSE"><span class="ic">⏸︎</span></button>
+    <button class="btn" data-key="KEY_STOP"><span class="ic">⏹︎</span></button>
+    <button class="btn" data-key="KEY_FF" data-repeat><span class="ic">⏩︎</span></button>
+  </div>
+
+  <div class="row r4">
+    <button class="btn ck r" data-key="KEY_RED"></button>
+    <button class="btn ck g" data-key="KEY_GREEN"></button>
+    <button class="btn ck y" data-key="KEY_YELLOW"></button>
+    <button class="btn ck b" data-key="KEY_CYAN"></button>
+  </div>
+
+  <details open>
+    <summary>APLIKACE</summary>
+    <div class="inner"><div class="row r3" id="apps" style="margin:0"></div></div>
+  </details>
+
+  <details>
+    <summary>ČÍSLA &amp; KANÁLY</summary>
+    <div class="inner">
+      <div class="row r3" id="numpad" style="margin-bottom:10px"></div>
+      <div class="row r3" style="margin:0">
+        <button class="btn" data-key="KEY_CH_LIST"><small>SEZNAM</small></button>
+        <button class="btn" data-key="KEY_0"><span class="ic">0</span></button>
+        <button class="btn" data-key="KEY_PRECH"><small>PŘEDCH.</small></button>
+        <button class="btn" data-key="KEY_GUIDE"><small>EPG</small></button>
+        <button class="btn" data-key="KEY_TOOLS"><small>NÁSTROJE</small></button>
+        <button class="btn" data-key="KEY_EXIT"><small>EXIT</small></button>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- settings -->
+<div class="modal" id="settings">
+  <div class="sheet">
+    <h2>NASTAVENÍ SPOJENÍ</h2>
+    <label>IP adresa televize</label>
+    <input type="text" id="ip" inputmode="decimal" placeholder="např. 192.168.1.50" autocomplete="off">
+    <label>Protokol</label>
+    <select id="port">
+      <option value="8002">wss :8002 (doporučeno, Tizen 2018+)</option>
+      <option value="8001">ws :8001 (starší TV / lokální soubor)</option>
+    </select>
+    <div class="toggle"><span>Vibrace při stisku</span><input type="checkbox" id="haptic"></div>
+    <div class="row r3" style="margin-top:16px">
+      <button class="btn amber" id="certBtn" style="grid-column:span 2">1 · Povolit certifikát</button>
+      <button class="btn" id="saveBtn">2 · Připojit</button>
+    </div>
+    <div class="row r3" style="margin:0">
+      <button class="btn" id="resetToken" style="grid-column:span 2">Zapomenout párování</button>
+      <button class="btn" id="closeSettings">Zavřít</button>
+    </div>
+    <p class="hint">
+      <b>IP adresa TV:</b> Nastavení → Obecné a ochrana osobních údajů → Síť → Stav sítě → Nastavení IP (nebo ji najdeš v routeru). Doporučuju v routeru TV přiřadit pevnou IP.<br><br>
+      <b>Certifikát:</b> TV používá vlastní certifikát, kterému Chrome nevěří. Tlačítko 1 otevře <code>https://IP:8002</code> – tam dej <b>Rozšířené → Pokračovat na web</b>, pak se vrať sem a dej Připojit.<br><br>
+      <b>První připojení:</b> na televizi vyskočí dotaz, jestli povolit zařízení <code>TV//LINK</code> – potvrď ovladačem. Token se uloží a příště se už neptá.<br><br>
+      Telefon musí být na stejné Wi-Fi jako TV. Pokud Chrome nabídne povolení přístupu k místní síti, povol ho.
+    </p>
+    <p class="hint" id="tokenInfo"></p>
+  </div>
+</div>
+
+<!-- keyboard -->
+<div class="modal" id="kbd">
+  <div class="sheet">
+    <h2 style="display:flex;align-items:center;gap:10px">KLÁVESNICE <span class="led" id="imeLed" style="margin-left:auto"></span><small id="imeTxt" style="font-family:'Share Tech Mono';font-size:11px;letter-spacing:0;color:var(--dim)">pole na TV zavřené</small></h2>
+    <div class="seg" id="kbdMode">
+      <button data-mode="mirror">ŽIVĚ · zrcadlit</button>
+      <button data-mode="append">PO ZNACÍCH</button>
+    </div>
+    <input type="text" id="kbdText" class="kbdin" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" placeholder="piš – na TV se to propisuje hned">
+    <div class="row r4 kbdkeys" style="margin-top:12px;margin-bottom:10px">
+      <button class="btn" data-k="left"><span class="ic">◀</span></button>
+      <button class="btn" data-k="right"><span class="ic">▶</span></button>
+      <button class="btn" data-k="clear"><small>VYMAZAT</small></button>
+      <button class="btn amber" data-k="done"><span class="ic">↵</span><small>HOTOVO</small></button>
+    </div>
+    <div class="row r3 kbdkeys" style="margin:0">
+      <button class="btn" data-key="KEY_RETURN"><small>↩ ZPĚT NA TV</small></button>
+      <button class="btn" data-key="KEY_ENTER"><small>OK NA TV</small></button>
+      <button class="btn" data-k="close"><small>ZAVŘÍT</small></button>
+    </div>
+    <p class="hint">Na TV otevři vyhledávání (YouTube, Netflix, prohlížeč…) – klávesnice se tu otevře sama, stačí ťuknout do pole. Každé písmeno i mazání se posílá hned.<br>
+    Když se na TV text zdvojuje nebo zůstává jen poslední písmeno, přepni režim.</p>
+  </div>
+</div>
+
+<!-- touchpad -->
+<div class="padview" id="padview">
+  <div class="padtop">
+    <button class="btn" id="closePad"><span class="ic">✕</span></button>
+    <div class="padtitle">TOUCHPAD<small id="padState">1 prst = kurzor · ťuk = klik</small></div>
+    <button class="btn" id="padKbd"><span class="ic">⌨</span></button>
+  </div>
+  <div class="pad" id="pad">
+    <div class="padgrid"></div>
+    <div class="padhelp">
+      <div><b>1 prst</b> táhni = kurzor</div>
+      <div><b>ťuk</b> = klik</div>
+      <div><b>2 prsty</b> nahoru/dolů = scroll</div>
+      <div><b>ťuk 2 prsty</b> = zpět</div>
+    </div>
+    <div class="ripple" id="ripple"></div>
+  </div>
+  <div class="padbar">
+    <button class="btn" data-key="KEY_RETURN"><span class="ic">↩</span><small>ZPĚT</small></button>
+    <button class="btn" data-key="KEY_HOME"><span class="ic">⌂</span><small>HOME</small></button>
+    <button class="btn" data-key="KEY_VOLDOWN" data-repeat><span class="ic">－</span><small>VOL</small></button>
+    <button class="btn" data-key="KEY_VOLUP" data-repeat><span class="ic">＋</span><small>VOL</small></button>
+    <button class="btn amber" id="padClick"><span class="ic">●</span><small>KLIK</small></button>
+  </div>
+  <div class="sens">
+    <span>CITLIVOST</span>
+    <input type="range" id="sens" min="0.5" max="4" step="0.1">
+    <span id="sensVal"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const LS = 'tvlink.v1';
+  const APP_NAME = 'TV//LINK';
+
+  // ---------- state ----------
+  const cfg = Object.assign({ ip: '', port: '8002', token: '', haptic: true },
+    (() => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } })());
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify(cfg)); } catch {} };
+
+  // ---------- apps (Tizen app IDs) ----------
+  const APPS = [
+    { n: 'YouTube',     id: '111299001912',  c: '#ff0033' },
+    { n: 'Netflix',     id: '3201907018807', c: '#e50914' },
+    { n: 'Disney+',     id: '3201901017640', c: '#1f6bff' },
+    { n: 'Prime Video', id: '3201910019365', c: '#00a8e1' },
+    { n: 'Max',         id: '3201601007230', c: '#7b3cff' },
+    { n: 'Spotify',     id: '3201606009684', c: '#1ed760' },
+    { n: 'Internet',    id: '3202010022079|org.tizen.browser', c: '#6c5cff', t: 'NATIVE_LAUNCH', wide: 1 },
+  ];
+  $('#apps').innerHTML = APPS.map(a =>
+    `<button class="btn app" data-app="${a.id}" data-type="${a.t || 'DEEP_LINK'}"${a.wide ? ' style="grid-column:1/-1"' : ''}><span class="dot" style="background:${a.c};box-shadow:0 0 8px ${a.c}"></span>${a.n}</button>`).join('');
+  $('#numpad').innerHTML = [1,2,3,4,5,6,7,8,9].map(n =>
+    `<button class="btn" data-key="KEY_${n}"><span class="ic" style="font-family:Orbitron">${n}</span></button>`).join('');
+
+  // ---------- UI helpers ----------
+  const led = $('#led'), stxt = $('#stxt');
+  function setStatus(kind, text) { led.className = 'led ' + (kind || ''); stxt.textContent = text; }
+  let toastT;
+  function toast(msg, ms = 2600) {
+    const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  const buzz = (ms = 12) => { if (cfg.haptic && navigator.vibrate) navigator.vibrate(ms); };
+  const b64 = str => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+
+  // ---------- connection ----------
+  let ws = null, ready = false, everReady = false, queue = [], retry = 0, retryT, authT;
+
+  function url() {
+    const proto = cfg.port === '8001' ? 'ws' : 'wss';
+    let u = `${proto}://${cfg.ip}:${cfg.port}/api/v2/channels/samsung.remote.control?name=${encodeURIComponent(b64(APP_NAME))}`;
+    if (cfg.token && cfg.port === '8002') u += `&token=${encodeURIComponent(cfg.token)}`;
+    return u;
+  }
+
+  function connect() {
+    clearTimeout(retryT);
+    if (!cfg.ip) { setStatus('err', 'zadej IP televize'); openModal('settings'); return; }
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    ready = false;
+    setStatus('wait', `připojuji ${cfg.ip}…`);
+    let opened = false;
+    try { ws = new WebSocket(url()); }
+    catch (e) { setStatus('err', 'chyba: ' + e.message); return; }
+
+    ws.onopen = () => {
+      opened = true;
+      // TV sends ms.channel.connect after the user allows it on screen
+      authT = setTimeout(() => { if (!ready) setStatus('wait', 'potvrď připojení na TV…'); }, 1200);
+    };
+    ws.onmessage = ev => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.event === 'ms.channel.connect') {
+        clearTimeout(authT);
+        ready = true; everReady = true; retry = 0;
+        $('#certBanner').classList.remove('show');
+        if (m.data && m.data.token) { cfg.token = m.data.token; save(); updateTokenInfo(); }
+        setStatus('on', `online · ${cfg.ip}`);
+        const q = queue; queue = []; q.forEach(p => ws.send(p));
+      } else if (m.event === 'ms.channel.unauthorized') {
+        setStatus('err', 'TV odmítla přístup');
+        toast('TV připojení odmítla. Na TV: Nastavení → Připojení → Správce externích zařízení → Seznam zařízení – povol TV//LINK.', 6000);
+      } else if (m.event === 'ms.channel.timeOut') {
+        setStatus('err', 'nepotvrzeno na TV');
+      } else if (m.event === 'ms.remote.imeStart') {
+        kb.tvField(true, '');
+      } else if (m.event === 'ms.remote.imeUpdate') {
+        kb.tvText(unb64(m.data || ''));
+      } else if (m.event === 'ms.remote.imeEnd') {
+        kb.tvField(false);
+      }
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      clearTimeout(authT);
+      const wasReady = ready; ready = false; ws = null;
+      if (!opened && cfg.port === '8002' && !everReady) $('#certBanner').classList.add('show');
+      setStatus('err', wasReady ? 'spojení ztraceno' : 'TV nedostupná');
+      if (document.visibilityState === 'visible' && retry < 6) {
+        retryT = setTimeout(connect, Math.min(1000 * 2 ** retry++, 15000));
+      }
+    };
+  }
+
+  function send(obj) {
+    const p = JSON.stringify(obj);
+    if (ws && ready) { ws.send(p); return; }
+    queue.push(p); if (queue.length > 5) queue.shift();
+    retry = 0; connect();
+    setTimeout(() => { queue = queue.filter(x => x !== p); }, 4000); // drop stale presses
+  }
+
+  const sendKey = key => send({ method: 'ms.remote.control',
+    params: { Cmd: 'Click', DataOfCmd: key, Option: 'false', TypeOfRemote: 'SendRemoteKey' } });
+
+  // several IDs separated by | = try each (different Tizen generations use different IDs)
+  const launchApp = (ids, type = 'DEEP_LINK') => ids.split('|').forEach(id => send({ method: 'ms.channel.emit',
+    params: { event: 'ed.apps.launch', to: 'host', data: { appId: id, action_type: type } } }));
+
+  const imeSet = text => send({ method: 'ms.remote.control', params: { Cmd: b64(text), DataOfCmd: 'base64', TypeOfRemote: 'SendInputString' } });
+  const imeEnd = () => send({ method: 'ms.remote.control', params: { TypeOfRemote: 'SendInputEnd' } });
+  const unb64 = s => { try { return new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))); } catch { return ''; } };
+
+  // ---------- press handling (tap + hold-to-repeat) ----------
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('[data-key],[data-app]');
+    if (!el) return;
+    e.preventDefault();
+    el.classList.add('pressed'); buzz();
+    if (el.dataset.app) { launchApp(el.dataset.app, el.dataset.type); return; }
+    const key = el.dataset.key;
+    sendKey(key);
+    if (el.hasAttribute('data-repeat')) {
+      let iv;
+      const t = setTimeout(() => { iv = setInterval(() => { sendKey(key); buzz(6); }, 140); }, 420);
+      const stop = () => { clearTimeout(t); clearInterval(iv); el.classList.remove('pressed');
+        ['pointerup','pointercancel','pointerleave'].forEach(ev => el.removeEventListener(ev, stop)); };
+      ['pointerup','pointercancel','pointerleave'].forEach(ev => el.addEventListener(ev, stop));
+    }
+  });
+  const unpress = () => document.querySelectorAll('.pressed:not([data-repeat])').forEach(el => el.classList.remove('pressed'));
+  document.addEventListener('pointerup', unpress);
+  document.addEventListener('pointercancel', unpress);
+  document.addEventListener('contextmenu', e => { if (!e.target.closest('input')) e.preventDefault(); });
+
+  // ---------- desktop keyboard shortcuts ----------
+  const KB = { ArrowUp:'KEY_UP', ArrowDown:'KEY_DOWN', ArrowLeft:'KEY_LEFT', ArrowRight:'KEY_RIGHT',
+    Enter:'KEY_ENTER', Backspace:'KEY_RETURN', Escape:'KEY_RETURN', h:'KEY_HOME', m:'KEY_MUTE',
+    '+':'KEY_VOLUP', '-':'KEY_VOLDOWN', PageUp:'KEY_CHUP', PageDown:'KEY_CHDOWN', ' ':'KEY_PLAY' };
+  document.addEventListener('keydown', e => {
+    if (e.target.matches('input,select') || document.querySelector('.modal.open')) return;
+    const k = KB[e.key] || (/^[0-9]$/.test(e.key) ? 'KEY_' + e.key : null);
+    if (k) { e.preventDefault(); sendKey(k); }
+  });
+
+  // ---------- modals ----------
+  function openModal(id) {
+    $('#' + id).classList.add('open');
+    if (id === 'settings') { $('#ip').value = cfg.ip; $('#port').value = cfg.port; $('#haptic').checked = cfg.haptic; updateTokenInfo(); }
+    if (id === 'kbd') { kb.onOpen(); setTimeout(() => $('#kbdText').focus(), 50); }
+  }
+  const closeModal = id => $('#' + id).classList.remove('open');
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+  function readForm() {
+    const ip = $('#ip').value.trim().replace(/^https?:\/\//, '').replace(/[:/].*$/, '');
+    if (ip !== cfg.ip) cfg.token = '';
+    cfg.ip = ip; cfg.port = $('#port').value; cfg.haptic = $('#haptic').checked; save();
+  }
+  function updateTokenInfo() {
+    $('#tokenInfo').innerHTML = cfg.token ? `Spárováno · token <code>${cfg.token}</code>` : 'Zatím nespárováno.';
+  }
+  function openCert() {
+    if (!cfg.ip) { toast('Nejdřív zadej IP adresu TV'); return; }
+    window.open(`https://${cfg.ip}:8002/api/v2/`, '_blank');
+  }
+
+  $('#openSettings').onclick = () => openModal('settings');
+  $('#closeSettings').onclick = () => { readForm(); closeModal('settings'); };
+  $('#certBtn').onclick = () => { readForm(); openCert(); };
+  $('#saveBtn').onclick = () => {
+    readForm(); closeModal('settings');
+    if (ws) { try { ws.onclose = null; ws.close(); } catch {} ws = null; }
+    retry = 0; everReady = false; connect();
+  };
+  $('#resetToken').onclick = () => { cfg.token = ''; save(); updateTokenInfo(); toast('Párování zapomenuto – při dalším připojení potvrď na TV.'); };
+  $('#bannerCert').onclick = openCert;
+  $('#bannerRetry').onclick = () => { $('#certBanner').classList.remove('show'); retry = 0; connect(); };
+
+  $('#openKbd').onclick = () => openModal('kbd');
+
+  // ---------- live keyboard ----------
+  // mirror: every change re-sends the whole field (TV replaces its text) – deleting works naturally
+  // append: only newly typed characters are sent (fallback for TVs that append instead of replace)
+  const kb = (() => {
+    const inp = $('#kbdText'), led = $('#imeLed'), txt = $('#imeTxt');
+    let sent = '', tvOpen = false, lastType = 0, t = 0;
+    const setMode = m => { cfg.kbdMode = m; save();
+      document.querySelectorAll('#kbdMode button').forEach(b => b.classList.toggle('on', b.dataset.mode === m)); };
+    setMode(cfg.kbdMode || 'mirror');
+    document.querySelectorAll('#kbdMode button').forEach(b => b.onclick = () => { setMode(b.dataset.mode); inp.focus(); });
+
+    function push() {
+      const v = inp.value;
+      if (v === sent) return;
+      if (cfg.kbdMode === 'append') {
+        let i = 0; while (i < sent.length && i < v.length && sent[i] === v[i]) i++;
+        const add = v.slice(i);
+        if (i < sent.length && !add) { /* pure delete – not possible in append mode */ }
+        if (add) imeSet(add);
+      } else imeSet(v);
+      sent = v;
+    }
+    inp.addEventListener('input', () => {
+      lastType = Date.now(); buzz(5);
+      clearTimeout(t); t = setTimeout(push, cfg.kbdMode === 'mirror' ? 40 : 0);
+    });
+    function done() { clearTimeout(t); push(); imeEnd(); buzz(20); inp.value = ''; sent = ''; }
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); done(); } });
+
+    const act = { left: () => sendKey('KEY_LEFT'), right: () => sendKey('KEY_RIGHT'),
+      clear: () => { inp.value = ''; if (cfg.kbdMode === 'mirror') imeSet(''); sent = ''; },
+      done, close: () => closeModal('kbd') };
+    document.querySelectorAll('.kbdkeys button').forEach(b => {
+      b.addEventListener('pointerdown', e => e.preventDefault());   // keep phone keyboard open
+      if (b.dataset.k) b.addEventListener('click', () => { buzz(); act[b.dataset.k](); });
+    });
+
+    return {
+      onOpen() { if (!tvOpen) { inp.value = ''; sent = ''; } },
+      tvField(open, text) {
+        tvOpen = open;
+        led.className = 'led ' + (open ? 'on' : ''); txt.textContent = open ? 'pole na TV aktivní' : 'pole na TV zavřené';
+        if (open) {
+          inp.value = text || ''; sent = inp.value;
+          if (!$('#kbd').classList.contains('open')) { openModal('kbd'); buzz(30); }
+        } else if (Date.now() - lastType > 800) { inp.blur(); closeModal('kbd'); }
+      },
+      tvText(text) {   // TV reports its current text – sync unless user is typing right now
+        if (Date.now() - lastType > 700 && text !== inp.value) { inp.value = text; sent = text; }
+      },
+    };
+  })();
+
+  // ---------- touchpad ----------
+  const mouse = (cmd, extra = {}) => ({ method: 'ms.remote.control',
+    params: Object.assign({ Cmd: cmd, TypeOfRemote: 'ProcessMouseDevice' }, extra) });
+  const sendMove = (x, y) => { if (ws && ready) ws.send(JSON.stringify(mouse('Move', { Position: { x, y, Time: String(Date.now()) } }))); };
+  const sendClick = () => send(mouse('LeftClick'));
+
+  (() => {
+    const pad = $('#pad'), view = $('#padview'), rip = $('#ripple'), sens = $('#sens'), sensVal = $('#sensVal');
+    if (!cfg.sens) cfg.sens = 1.8;
+    sens.value = cfg.sens; sensVal.textContent = (+cfg.sens).toFixed(1);
+    sens.oninput = () => { cfg.sens = +sens.value; sensVal.textContent = cfg.sens.toFixed(1); save(); };
+
+    const pts = new Map();            // pointerId -> {x,y,sx,sy,t}
+    let accX = 0, accY = 0, raf = 0, lastT = 0;
+    let gesture = null;               // 'move' | 'scroll' | null
+    let maxPts = 0, downT = 0, travel = 0, scrollAcc = 0;
+
+    const ripple = (x, y) => { const r = pad.getBoundingClientRect();
+      rip.style.left = (x - r.left) + 'px'; rip.style.top = (y - r.top) + 'px';
+      rip.classList.remove('go'); void rip.offsetWidth; rip.classList.add('go'); };
+
+    function flush() {
+      raf = 0;
+      const x = Math.round(accX), y = Math.round(accY);
+      if (x || y) { sendMove(x, y); accX -= x; accY -= y; }
+    }
+
+    pad.addEventListener('pointerdown', e => {
+      e.preventDefault(); pad.setPointerCapture(e.pointerId);
+      if (!pts.size) { maxPts = 0; travel = 0; downT = performance.now(); gesture = null; scrollAcc = 0; }
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY });
+      maxPts = Math.max(maxPts, pts.size);
+      pad.classList.add('active', 'used');
+      if (!ready) connect();
+    });
+
+    pad.addEventListener('pointermove', e => {
+      const p = pts.get(e.pointerId); if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      travel += Math.hypot(dx, dy);
+
+      if (pts.size >= 2) {
+        // two-finger vertical drag = scroll (channel keys scroll pages in the Tizen browser)
+        gesture = 'scroll';
+        scrollAcc += dy / pts.size;
+        while (Math.abs(scrollAcc) > 45) {
+          const down = scrollAcc < 0;               // finger up -> content down, like a phone
+          sendKey(down ? 'KEY_CHDOWN' : 'KEY_CHUP'); buzz(5);
+          scrollAcc += down ? 45 : -45;
+        }
+        return;
+      }
+      if (gesture === 'scroll') return;
+      gesture = 'move';
+      const now = performance.now(), dt = Math.max(1, now - (lastT || now - 16)); lastT = now;
+      const speed = Math.hypot(dx, dy) / dt;        // px per ms
+      const accel = 1 + Math.min(speed * 1.2, 3);   // faster swipe -> longer jump
+      accX += dx * cfg.sens * accel;
+      accY += dy * cfg.sens * accel;
+      if (!raf) raf = requestAnimationFrame(flush);
+    });
+
+    function end(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (pts.size) return;
+      pad.classList.remove('active'); lastT = 0;
+      const dur = performance.now() - downT;
+      if (dur < 260 && travel < 14 && e.type === 'pointerup') {
+        if (maxPts >= 2) { sendKey('KEY_RETURN'); buzz(25); toast('↩ Zpět', 900); }
+        else { sendClick(); buzz(18); ripple(e.clientX, e.clientY); }
+      }
+      gesture = null;
+    }
+    ['pointerup', 'pointercancel'].forEach(t => pad.addEventListener(t, end));
+
+    $('#openPad').onclick = () => { view.classList.add('open'); pad.classList.remove('used'); if (!ready) connect(); };
+    $('#closePad').onclick = () => view.classList.remove('open');
+    $('#padKbd').onclick = () => openModal('kbd');
+    $('#padClick').addEventListener('pointerdown', e => { e.preventDefault(); sendClick(); buzz(18); });
+  })();
+
+  // reconnect when app comes back to foreground
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !ready && cfg.ip) { retry = 0; connect(); }
+  });
+
+  // ---------- PWA ----------
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  if (cfg.ip) connect(); else { setStatus('err', 'zadej IP televize'); openModal('settings'); }
+})();
+</script>
+</body>
+</html>
