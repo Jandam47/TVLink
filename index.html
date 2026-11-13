@@ -118,6 +118,7 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
 .seg button{height:38px;border:0;background:#070b16;color:var(--dim);font-family:Orbitron;font-size:10px;letter-spacing:1px}
 .seg button.on{background:rgba(0,240,255,.12);color:var(--cyan);box-shadow:inset 0 -2px 0 var(--cyan)}
 .kbdin{height:56px!important;font-size:20px!important;border-color:rgba(0,240,255,.4)!important}
+.log{font-family:'Share Tech Mono';font-size:11px;line-height:1.35;color:#8fb3d9;background:#050810;border:1px solid var(--line);border-radius:10px;padding:8px;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;user-select:text;-webkit-user-select:text}
 .toggle{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:15px}
 .toggle input{width:22px;height:22px;accent-color:var(--cyan)}
 
@@ -229,7 +230,12 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
 
   <details open>
     <summary>APLIKACE</summary>
-    <div class="inner"><div class="row r3" id="apps" style="margin:0"></div></div>
+    <div class="inner"><div class="row r3" id="apps" style="margin:0"></div>
+      <div class="row r3" style="margin:10px 0 0">
+        <button class="btn" id="addApp" style="grid-column:span 2"><small>＋ PŘIDAT APLIKACI</small></button>
+        <button class="btn" id="rmApps"><small>ODEBRAT</small></button>
+      </div>
+    </div>
   </details>
 
   <details>
@@ -275,6 +281,8 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
       Telefon musí být na stejné Wi-Fi jako TV. Pokud Chrome nabídne povolení přístupu k místní síti, povol ho.
     </p>
     <p class="hint" id="tokenInfo"></p>
+    <label>LOG KOMUNIKACE S TV (pro ladění – můžeš poslat screenshot)</label>
+    <pre id="log" class="log">—</pre>
   </div>
 </div>
 
@@ -350,16 +358,28 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
 
   // ---------- apps (Tizen app IDs) ----------
   const APPS = [
-    { n: 'YouTube',     id: '111299001912',  c: '#ff0033' },
-    { n: 'Netflix',     id: '3201907018807', c: '#e50914' },
+    { n: 'YouTube',     id: '111299001912',  c: '#ff0033', dial: 'YouTube' },
+    { n: 'Netflix',     id: '3201907018807|11101200001', c: '#e50914', dial: 'Netflix' },
     { n: 'Disney+',     id: '3201901017640', c: '#1f6bff' },
     { n: 'Prime Video', id: '3201910019365', c: '#00a8e1' },
     { n: 'Max',         id: '3201601007230', c: '#7b3cff' },
     { n: 'Spotify',     id: '3201606009684', c: '#1ed760' },
     { n: 'Internet',    id: '3202010022079|org.tizen.browser', c: '#6c5cff', t: 'NATIVE_LAUNCH', wide: 1 },
   ];
-  $('#apps').innerHTML = APPS.map(a =>
-    `<button class="btn app" data-app="${a.id}" data-type="${a.t || 'DEEP_LINK'}"${a.wide ? ' style="grid-column:1/-1"' : ''}><span class="dot" style="background:${a.c};box-shadow:0 0 8px ${a.c}"></span>${a.n}</button>`).join('');
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function renderApps(list) {
+    $('#apps').innerHTML = list.map(a =>
+      `<button class="btn app" data-app="${esc(a.id)}" data-type="${a.t || 'DEEP_LINK'}" data-dial="${a.dial || ''}" data-name="${esc(a.n)}"${a.wide ? ' style="grid-column:1/-1"' : ''}><span class="dot" style="background:${a.c || '#00f0ff'};box-shadow:0 0 8px ${a.c || '#00f0ff'}"></span>${esc(a.n)}</button>`).join('');
+  }
+  if (!Array.isArray(cfg.apps)) cfg.apps = APPS.map(a => Object.assign({}, a));
+  delete cfg.tvApps;
+  let removeMode = false;
+  const drawApps = () => renderApps(cfg.apps);
+  drawApps();
+  function removeApp(id, name) {
+    if (!confirm(`Odebrat ${name}?`)) return;
+    cfg.apps = cfg.apps.filter(a => a.id !== id); save(); drawApps();
+  }
   $('#numpad').innerHTML = [1,2,3,4,5,6,7,8,9].map(n =>
     `<button class="btn" data-key="KEY_${n}"><span class="ic" style="font-family:Orbitron">${n}</span></button>`).join('');
 
@@ -370,6 +390,12 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
   function toast(msg, ms = 2600) {
     const t = $('#toast'); t.textContent = msg; t.classList.add('show');
     clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms);
+  }
+  const logBuf = [];
+  function log(t) {
+    logBuf.push(new Date().toLocaleTimeString('cs-CZ') + ' ' + t);
+    if (logBuf.length > 80) logBuf.shift();
+    const el = document.getElementById('log'); if (el) el.textContent = logBuf.slice().reverse().join('\n');
   }
   const buzz = (ms = 12) => { if (cfg.haptic && navigator.vibrate) navigator.vibrate(ms); };
   const b64 = str => btoa(String.fromCharCode(...new TextEncoder().encode(str)));
@@ -401,6 +427,7 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
     };
     ws.onmessage = ev => {
       let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (!/^ms\.remote\.(touch|ime)/.test(m.event || '')) log('← ' + String(ev.data).slice(0, 220));
       if (m.event === 'ms.channel.connect') {
         clearTimeout(authT);
         ready = true; everReady = true; retry = 0;
@@ -435,6 +462,7 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
 
   function send(obj) {
     const p = JSON.stringify(obj);
+    if (obj.params && obj.params.TypeOfRemote !== 'ProcessMouseDevice') log('→ ' + p.slice(0, 160));
     if (ws && ready) { ws.send(p); return; }
     queue.push(p); if (queue.length > 5) queue.shift();
     retry = 0; connect();
@@ -445,8 +473,18 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
     params: { Cmd: 'Click', DataOfCmd: key, Option: 'false', TypeOfRemote: 'SendRemoteKey' } });
 
   // several IDs separated by | = try each (different Tizen generations use different IDs)
-  const launchApp = (ids, type = 'DEEP_LINK') => ids.split('|').forEach(id => send({ method: 'ms.channel.emit',
-    params: { event: 'ed.apps.launch', to: 'host', data: { appId: id, action_type: type } } }));
+  // ---------- app launching ----------
+  // Newer Samsung firmwares silently ignore the WebSocket launch command, so we go straight
+  // to the TV's REST endpoint on :8002 (same cert as the remote). DIAL :8080 as a parallel backup.
+  function launchApp(ids, dial = '', name = '') {
+    toast('▶ ' + (name || 'aplikace'), 1200);
+    for (const id of ids.split('|')) {
+      fetch(`https://${cfg.ip}:8002/api/v2/applications/${encodeURIComponent(id)}`, { method: 'POST', mode: 'no-cors' })
+        .then(() => log(`REST :8002 ${id}: odesláno`)).catch(e => log(`REST :8002 ${id}: chyba ${e.message}`));
+    }
+    if (dial) fetch(`http://${cfg.ip}:8080/ws/apps/${dial}`, { method: 'POST', mode: 'no-cors', targetAddressSpace: 'local' })
+      .then(() => log(`DIAL ${dial}: odesláno`)).catch(e => log(`DIAL ${dial}: chyba ${e.message}`));
+  }
 
   const imeSet = text => send({ method: 'ms.remote.control', params: { Cmd: b64(text), DataOfCmd: 'base64', TypeOfRemote: 'SendInputString' } });
   const imeEnd = () => send({ method: 'ms.remote.control', params: { TypeOfRemote: 'SendInputEnd' } });
@@ -458,7 +496,9 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
     if (!el) return;
     e.preventDefault();
     el.classList.add('pressed'); buzz();
-    if (el.dataset.app) { launchApp(el.dataset.app, el.dataset.type); return; }
+    if (el.dataset.app) {
+      if (removeMode) { removeApp(el.dataset.app, el.dataset.name); el.classList.remove('pressed'); return; }
+      launchApp(el.dataset.app, el.dataset.dial, el.dataset.name); return; }
     const key = el.dataset.key;
     sendKey(key);
     if (el.hasAttribute('data-repeat')) {
@@ -655,6 +695,17 @@ input[type=text]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 10px
     $('#padKbd').onclick = () => openModal('kbd');
     $('#padClick').addEventListener('pointerdown', e => { e.preventDefault(); sendClick(); buzz(18); });
   })();
+
+  $('#addApp').onclick = () => {
+    const n = (prompt('Název aplikace (např. iVysílání):') || '').trim(); if (!n) return;
+    const id = (prompt('Tizen App ID (např. 111299001912):') || '').trim(); if (!id) return;
+    cfg.apps.push({ n, id, c: '#00f0ff' }); save(); drawApps(); toast('Přidáno: ' + n);
+  };
+  $('#rmApps').onclick = e => {
+    removeMode = !removeMode;
+    e.currentTarget.classList.toggle('amber', removeMode);
+    toast(removeMode ? 'Ťukni na aplikaci, kterou chceš odebrat. Pak znovu ODEBRAT.' : 'Hotovo', 2500);
+  };
 
   // reconnect when app comes back to foreground
   document.addEventListener('visibilitychange', () => {
